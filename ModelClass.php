@@ -6,7 +6,7 @@
 require_once 'Model.php';
 
 class ModelClass extends Model {
-  protected $_table = 'test.model_test';
+  protected $_schema = 'test';
+  protected $_table = 'model_test';
   protected $_pk = 'id';
 }
-

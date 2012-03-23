@@ -5,14 +5,16 @@
  */
 
 require_once 'PHPUnit/Autoload.php';
-require_once 'ModelClass.php';
+require_once '../ModelClass.php';
+require_once '../DbExpression.php';
+require_once '../DbDateTime.php';
 
 
 /**
  * @backupGlobals disabled
  * @backupStaticAttributes disabled
  */
-class TestModel extends PHPUnit_Framework_TestCase {
+class ModelTest extends PHPUnit_Framework_TestCase {
 
   public static function setUpBeforeClass() {
     global $dbh;
@@ -65,14 +67,25 @@ SQL;
     $model= new ModelClass();
     $model->string = 'lorem ipsum dolor'; 
     $model->int = 10; 
-    $model->date = 'NOW()'; 
-    $model->timestamp = 'NOW()'; 
+    $model->date = new DbExpression('NOW() + INTERVAL 10 HOUR'); 
+    $model->timestamp = new DbExpression('NOW()'); 
     $model->decimal = 10.03; 
     $model->float = 10/3; 
-    $this->assertTrue($model->save(), 'save fuckup');
+    $save_response = $model->save();
+    $this->assertTrue($save_response);
     $this->assertEquals(10, $model->int);
-    echo $model->date;
-    $this->assertEquals(10, $model->date);
   }
 
+  public function testCreateModel2() {
+    $model= new ModelClass();
+    $model->string = "The name of the song was: \"Qui pense a l'amour, a l'amour\""; 
+    $model->int = 100000; 
+    $model->date = new DbDateTime('NOW - 100 YEAR + 2 HOUR');
+    $model->timestamp = new DbExpression('NOW()'); 
+    $model->decimal = 10.03; 
+    $model->float = 10/3; 
+    $save_response = $model->save();
+    $this->assertTrue($save_response);
+    $this->assertEquals(100000, $model->int);
+  }
 }

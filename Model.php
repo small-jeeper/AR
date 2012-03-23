@@ -10,10 +10,14 @@
 
 require_once 'db.php';
 require_once 'ModelException.php';
+require_once 'DbExpression.php';
+require_once 'DbQueryBuilder.php';
 
 abstract class Model {
 
   private $_dbh;
+  private $_error_info;
+  private $_queryBuilder; // DbQueryBuilder instance
 
   private $_is_new_instance = true;
   private $_a = array(); // attributes
@@ -24,6 +28,7 @@ abstract class Model {
    * @TODO Model::getByPK(array('id1' => 10, 'id2' => 20)) or just array(10,20)
    */
   protected $_pk = 'id';
+  protected $_schema = 'id';
   protected $_table = 'id';
 
   /**
@@ -38,6 +43,8 @@ abstract class Model {
   public function __construct() {
     global $dbh;
     $this->_dbh = $dbh;
+    $this->_queryBuilder = new DbQueryBuilder();
+    $this->_queryBuilder->setTable($this->_table)->setSchema($this->_schema);
 
     // we need table 
     if (empty($this->_table)) {
@@ -49,41 +56,49 @@ abstract class Model {
   }
 
   private function formatValues($v) {
-    if (!isset($this->datefields[$v])) {
-      return ':'.$v; // bind
+    if ($v instanceof DbExpression) {
+      return $v;
     }
     else {
-      return $v; // as is e.g. NOW()
+      return ':'.$v;
     }
   }
+
   private function formatKeys($k) {
     return '`'.$k.'`';
   }
+
+  private function filterDbExpressions($v) {
+    return !($v instanceof DbExpression);
+  }
+
   public function save() {
     if ($this->isNewRecord()) {
-      $keys = array_keys($this->_a);
-      $values = array_map(create_function('$k', 'return ":".$k;'), array_keys($this->_a));
-      $keys = implode(', ', array_map(array($this, 'formatKeys'), $keys));
-      $values = implode(', ', array_map(array($this, 'formatValues'), array_keys($this->_a)));
-      $sql = 'INSERT INTO '.$this->_table.' ('.$keys.') VALUES ('.$values.')';
-      $statement = $this->_dbh->prepare($sql);
-      $result = $statement->execute($this->_a);
-      echo 'params: ';
-      echo $statement->debugDumpParams();
-      echo 'error info: ';
-      echo var_export($statement->errorInfo(),1);
-      echo '<<<<<<<<';
+
+      $query = $this->_queryBuilder->insert($this->_a);
+      $statement = $this->_dbh->prepare($query);
+      $result = $statement->execute($this->_queryBuilder->getBindParams());
+
       if ($result) { 
         $this->_a[$this->_pk] = $this->_dbh->lastInsertId();
       }
     }
     else { // update
+
       $values = array_map(create_function('$k,$v', 'return $k."=:".$v;'), array_keys($this->_a), $this->_a);
       $sql = 'UPDATE '.$this->_table.' SET '.implode(', ', $values).' WHERE '.$this->_pk.' = '.$this->_a[$this->_pk];
       $statement = $this->db->prepare($sql);
       $result = $statement->execute($this->_a);
+
+    }
+    if (!$result) {
+      $this->_error_info = $this->_dbh->errorInfo();
     }
     return $result;
+  }
+
+  public function getErrorInfo() {
+    return $this->_error_info;
   }
 
   public function isNewRecord() {
