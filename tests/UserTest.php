@@ -6,6 +6,10 @@
 
 require_once 'PHPUnit/Autoload.php';
 
+/**
+ * @backupGlobals disabled
+ * @backupStaticAttributes disabled
+ */
 class UserTest extends PHPUnit_Framework_TestCase {
 
   public function setUp() {

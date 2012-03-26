@@ -3,7 +3,12 @@
 require_once 'PHPUnit/Autoload.php';
 require_once '../DbExpression.php';
 require_once '../DbQueryBuilder.php';
+require_once '../DbCriteria.php';
 
+/**
+ * @backupGlobals disabled
+ * @backupStaticAttributes disabled
+ */
 class DbQueryBuilderTest extends PHPUnit_Framework_TestCase {
 
   private $queryBuilder;
@@ -30,6 +35,7 @@ class DbQueryBuilderTest extends PHPUnit_Framework_TestCase {
   public function testUpdateQuery() {
     $criteria = new DbCriteria();
     $criteria->conditions = array('id = :id');
+    $update_fields = array();
     $query = $this->queryBuilder->update($update_fields, $criteria);
     $this->markTestIncomplete();
   }

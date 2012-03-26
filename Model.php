@@ -55,33 +55,34 @@ abstract class Model {
     }
   }
 
-  private function formatValues($v) {
-    if ($v instanceof DbExpression) {
-      return $v;
-    }
-    else {
-      return ':'.$v;
-    }
+  protected function resolvers() {
+    return array();
   }
 
-  private function formatKeys($k) {
-    return '`'.$k.'`';
-  }
-
-  private function filterDbExpressions($v) {
-    return !($v instanceof DbExpression);
+  protected function applyResolvers() {
+    $resolvers = $this->resolvers();
+    foreach ($resolvers as $resolver) {
+      $this->$resolver();
+    }
   }
 
   public function save() {
+
+    $this->applyResolvers();
+
+
     if ($this->isNewRecord()) {
 
       $query = $this->_queryBuilder->insert($this->_a);
       $statement = $this->_dbh->prepare($query);
       $result = $statement->execute($this->_queryBuilder->getBindParams());
+      echo $query;
+      var_export($this->_queryBuilder->getBindparams());
 
       if ($result) { 
         $this->_a[$this->_pk] = $this->_dbh->lastInsertId();
       }
+
     }
     else { // update
 
@@ -107,6 +108,11 @@ abstract class Model {
 
   // get an attribute
   public function __get($name) {
+    $resolvers = $this->resolvers();
+    if (isset($resolvers[$name])) {
+      $resolver = $resolvers[$name];
+      $this->$resolver();
+    }
     if (method_exists($this, 'get'.ucfirst($name))) {
       $method = 'get'.ucfirst($name);
       return $this->$method();
@@ -123,6 +129,10 @@ abstract class Model {
     if ($name[0] != '_') {
       $this->_a[$name] = $value;
     }
+  }
+
+  public function __isset($name) {
+    return isset($this->_a[$name]);
   }
   
   public function __call($fn, $args) {

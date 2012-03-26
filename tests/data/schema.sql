@@ -11,9 +11,9 @@ create table if not exists `people` (
   `id` int(11) unsigned not null auto_increment,
   `name` varchar(255) not null default '',
   `address` text,
-  `birthday` datetime not null default '0000-00-00 00:00:00', -- test dates < 1970
+  `birthday` date not null default '0000-00-00', -- test dates < 1970
   `created_at` datetime not null default '0000-00-00 00:00:00', -- test dates
-  `updated_at` timstamp not null,
+  `updated_at` timestamp not null,
   `age` tinyint(4) not null, -- test field setter
   `gender` set('M', 'F') not null, -- test set
   PRIMARY KEY `id` (`id`),
